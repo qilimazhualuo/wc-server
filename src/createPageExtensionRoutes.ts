@@ -31,8 +31,20 @@ const parseRecordIds = (rawIds?: string) => {
 export const createPageExtensionRoutes = (options: PageExtensionRouteOptions) => {
     const routePrefix = options.routePrefix ?? '/api/system'
 
+    type RouteContext = {
+        request: Request
+        db: DatabaseInstance
+        set: PageExtensionAuthContext['set']
+        params: Record<string, string>
+        query: Record<string, string>
+        body: Record<string, unknown>
+    }
+
+    const readContext = (context: Record<string, unknown>) => context as RouteContext
+
     return new Elysia({ name: 'wc-server-page-extensions' })
-        .get(`${routePrefix}/page-schemas/:pageKey`, async ({ request, db, set, params }) => {
+        .get(`${routePrefix}/page-schemas/:pageKey`, async (context) => {
+            const { request, db, set, params } = readContext(context)
             const auth = await options.requireAuth({ request, db, set })
             if (auth && typeof auth === 'object' && 'code' in auth) {
                 return auth
@@ -48,7 +60,8 @@ export const createPageExtensionRoutes = (options: PageExtensionRouteOptions) =>
         })
         .put(
             `${routePrefix}/page-schemas/:pageKey`,
-            async ({ request, db, set, params, body }) => {
+            async (context) => {
+                const { request, db, set, params, body } = readContext(context)
                 const auth = await options.requireAuth({ request, db, set })
                 if (auth && typeof auth === 'object' && 'code' in auth) {
                     return auth
@@ -75,7 +88,8 @@ export const createPageExtensionRoutes = (options: PageExtensionRouteOptions) =>
                 }),
             },
         )
-        .get(`${routePrefix}/page-extras/:pageKey`, async ({ request, db, set, params, query }) => {
+        .get(`${routePrefix}/page-extras/:pageKey`, async (context) => {
+            const { request, db, set, params, query } = readContext(context)
             const auth = await options.requireAuth({ request, db, set })
             if (auth && typeof auth === 'object' && 'code' in auth) {
                 return auth
@@ -87,7 +101,8 @@ export const createPageExtensionRoutes = (options: PageExtensionRouteOptions) =>
         })
         .put(
             `${routePrefix}/page-extras/:pageKey/:recordId`,
-            async ({ request, db, set, params, body }) => {
+            async (context) => {
+                const { request, db, set, params, body } = readContext(context)
                 const auth = await options.requireAuth({ request, db, set })
                 if (auth && typeof auth === 'object' && 'code' in auth) {
                     return auth
@@ -98,7 +113,12 @@ export const createPageExtensionRoutes = (options: PageExtensionRouteOptions) =>
                     return fail('400', '无效的记录 ID')
                 }
 
-                await options.extrasService.saveRecordExtras(db, params.pageKey, recordId, body.extras || {})
+                await options.extrasService.saveRecordExtras(
+                    db,
+                    params.pageKey,
+                    recordId,
+                    (body.extras || {}) as Record<string, unknown>,
+                )
                 return success(true)
             },
             {
@@ -107,7 +127,8 @@ export const createPageExtensionRoutes = (options: PageExtensionRouteOptions) =>
                 }),
             },
         )
-        .delete(`${routePrefix}/page-extras/:pageKey`, async ({ request, db, set, params, query }) => {
+        .delete(`${routePrefix}/page-extras/:pageKey`, async (context) => {
+            const { request, db, set, params, query } = readContext(context)
             const auth = await options.requireAuth({ request, db, set })
             if (auth && typeof auth === 'object' && 'code' in auth) {
                 return auth

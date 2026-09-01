@@ -76,13 +76,28 @@ export const createPageExtrasService = (options: PageExtrasServiceOptions) => {
         }
 
         const placeholders = sql.join(recordIds.map((recordId) => sql`${recordId}`), sql`, `)
-        const rows = await db.execute(sql`
+
+        if (options.isMysqlDriver()) {
+            const mysqlDb = db as MySql2Database
+            const rows = await mysqlDb.execute(sql`
+                SELECT record_id, extras
+                FROM ${sql.raw(tableName)}
+                WHERE page_key = ${pageKey}
+                  AND record_id IN (${placeholders})
+            `) as unknown as Array<{ record_id: number; extras: unknown }>
+            rows.forEach((rowItem) => {
+                extrasMap[Number(rowItem.record_id)] = parseJsonObject(rowItem.extras)
+            })
+            return extrasMap
+        }
+
+        const pgDb = db as PostgresJsDatabase
+        const rows = await pgDb.execute(sql`
             SELECT record_id, extras
             FROM ${sql.raw(tableName)}
             WHERE page_key = ${pageKey}
               AND record_id IN (${placeholders})
         `) as unknown as Array<{ record_id: number; extras: unknown }>
-
         rows.forEach((rowItem) => {
             extrasMap[Number(rowItem.record_id)] = parseJsonObject(rowItem.extras)
         })
@@ -97,7 +112,8 @@ export const createPageExtrasService = (options: PageExtrasServiceOptions) => {
     ) => {
         const serializedExtras = JSON.stringify(extras)
         if (options.isMysqlDriver()) {
-            await db.execute(sql`
+            const mysqlDb = db as MySql2Database
+            await mysqlDb.execute(sql`
                 INSERT INTO ${sql.raw(tableName)} (page_key, record_id, extras, updated_at)
                 VALUES (${pageKey}, ${recordId}, ${serializedExtras}, CURRENT_TIMESTAMP)
                 ON DUPLICATE KEY UPDATE
@@ -107,7 +123,8 @@ export const createPageExtrasService = (options: PageExtrasServiceOptions) => {
             return
         }
 
-        await db.execute(sql`
+        const pgDb = db as PostgresJsDatabase
+        await pgDb.execute(sql`
             INSERT INTO ${sql.raw(tableName)} (page_key, record_id, extras, updated_at)
             VALUES (${pageKey}, ${recordId}, ${serializedExtras}, NOW())
             ON CONFLICT (page_key, record_id) DO UPDATE SET
@@ -125,7 +142,18 @@ export const createPageExtrasService = (options: PageExtrasServiceOptions) => {
             return
         }
         const placeholders = sql.join(recordIds.map((recordId) => sql`${recordId}`), sql`, `)
-        await db.execute(sql`
+        if (options.isMysqlDriver()) {
+            const mysqlDb = db as MySql2Database
+            await mysqlDb.execute(sql`
+                DELETE FROM ${sql.raw(tableName)}
+                WHERE page_key = ${pageKey}
+                  AND record_id IN (${placeholders})
+            `)
+            return
+        }
+
+        const pgDb = db as PostgresJsDatabase
+        await pgDb.execute(sql`
             DELETE FROM ${sql.raw(tableName)}
             WHERE page_key = ${pageKey}
               AND record_id IN (${placeholders})
