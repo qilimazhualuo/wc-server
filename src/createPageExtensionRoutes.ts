@@ -42,7 +42,7 @@ export const createPageExtensionRoutes = (options: PageExtensionRouteOptions) =>
 
     const readContext = (context: Record<string, unknown>) => context as RouteContext
 
-    return new Elysia({ name: 'wc-server-page-extensions' })
+    return new Elysia({ name: 'wc-server-extensions' })
         .get(`${routePrefix}/page-schemas/:pageKey`, async (context) => {
             const { request, db, set, params } = readContext(context)
             const auth = await options.requireAuth({ request, db, set })
