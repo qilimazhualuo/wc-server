@@ -15,6 +15,13 @@ export { buildTree } from './tree'
 export { insertRow, updateRowById, deleteRowById, deleteRowsByColumn, selectAllRows, replaceJoinRows } from './dbOperations'
 export { createCrudResource, createCrudRoutes } from './createCrudResource'
 export { createRelationRoutes } from './createRelationRoutes'
+export {
+    syncTableSchema,
+    camelToSnake,
+    resolveColumnName,
+    isPersistedField,
+} from './schemaSync'
+export type { SchemaField, SchemaSyncContext } from './schemaSync'
 export type {
     CrudAuthContext,
     CrudRouteContext,

@@ -16,6 +16,7 @@ export type PageExtensionRouteOptions = {
     configStore: FilePageConfigStore
     extrasService: PageExtrasService
     requireAuth: (context: PageExtensionAuthContext) => Promise<unknown>
+    onFieldsSaved?: (pageKey: string, fields: Array<Record<string, unknown>>) => Promise<void>
 }
 
 const parseRecordIds = (rawIds?: string) => {
@@ -53,6 +54,7 @@ export const createPageExtensionRoutes = (options: PageExtensionRouteOptions) =>
             const pageSchema = options.extrasService.getPageExtraFields(options.configStore, params.pageKey)
             return success({
                 pageKey: params.pageKey,
+                tableName: pageSchema.tableName,
                 fields: pageSchema.fields,
                 fieldOrder: pageSchema.fieldOrder,
                 coreFieldOverrides: pageSchema.coreFieldOverrides,
@@ -78,6 +80,11 @@ export const createPageExtensionRoutes = (options: PageExtensionRouteOptions) =>
                     Array.isArray(body.fieldOrder) ? body.fieldOrder.map((value) => String(value)) : [],
                     Array.isArray(body.coreFieldOverrides) ? body.coreFieldOverrides : [],
                 )
+
+                if (options.onFieldsSaved) {
+                    await options.onFieldsSaved(params.pageKey, body.fields)
+                }
+
                 return success(true)
             },
             {

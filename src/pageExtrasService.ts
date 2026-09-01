@@ -40,7 +40,8 @@ export const createPageExtrasService = (options: PageExtrasServiceOptions) => {
     const getPageExtraFields = (configStore: FilePageConfigStore, pageKey: string) => {
         const pageConfig = configStore.loadPageConfig(pageKey)
         return {
-            fields: pageConfig.extraFields,
+            tableName: pageConfig.tableName,
+            fields: pageConfig.fields,
             fieldOrder: pageConfig.fieldOrder,
             coreFieldOverrides: pageConfig.coreFieldOverrides,
         }
@@ -54,12 +55,13 @@ export const createPageExtrasService = (options: PageExtrasServiceOptions) => {
         coreFieldOverrides: PageFieldRecord[] = [],
     ) => {
         const pageConfig = configStore.savePageConfig(pageKey, {
-            extraFields: fields,
+            fields,
             fieldOrder,
             coreFieldOverrides,
         })
         return {
-            fields: pageConfig.extraFields,
+            tableName: pageConfig.tableName,
+            fields: pageConfig.fields,
             fieldOrder: pageConfig.fieldOrder,
             coreFieldOverrides: pageConfig.coreFieldOverrides,
         }

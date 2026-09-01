@@ -5,8 +5,10 @@ export type PageConfigRecord = Record<string, unknown>
 
 export type PageConfigPayload = {
     pageKey: string
-    extraFields: PageConfigRecord[]
+    tableName?: string
+    fields: PageConfigRecord[]
     fieldOrder: string[]
+    extraFields: PageConfigRecord[]
     coreFieldOverrides: PageConfigRecord[]
 }
 
@@ -17,8 +19,9 @@ export type FilePageConfigStoreOptions = {
 
 const defaultPageConfig = (pageKey: string): PageConfigPayload => ({
     pageKey,
-    extraFields: [],
+    fields: [],
     fieldOrder: [],
+    extraFields: [],
     coreFieldOverrides: [],
 })
 
@@ -58,12 +61,21 @@ const parseJsonStringArray = (rawValue: unknown): string[] => {
     return []
 }
 
-const normalizePageConfig = (pageKey: string, rawConfig: Record<string, unknown>): PageConfigPayload => ({
-    pageKey,
-    extraFields: parseJsonArray(rawConfig.extraFields ?? rawConfig.fields),
-    fieldOrder: parseJsonStringArray(rawConfig.fieldOrder),
-    coreFieldOverrides: parseJsonArray(rawConfig.coreFieldOverrides),
-})
+const normalizePageConfig = (pageKey: string, rawConfig: Record<string, unknown>): PageConfigPayload => {
+    const fields = parseJsonArray(rawConfig.fields)
+    const extraFields = parseJsonArray(rawConfig.extraFields)
+    const coreFieldOverrides = parseJsonArray(rawConfig.coreFieldOverrides)
+    const tableName = typeof rawConfig.tableName === 'string' ? rawConfig.tableName : undefined
+
+    return {
+        pageKey,
+        tableName,
+        fields: fields.length ? fields : extraFields,
+        fieldOrder: parseJsonStringArray(rawConfig.fieldOrder),
+        extraFields,
+        coreFieldOverrides,
+    }
+}
 
 export type FilePageConfigStore = ReturnType<typeof createFilePageConfigStore>
 
@@ -81,7 +93,9 @@ export const createFilePageConfigStore = (options: FilePageConfigStoreOptions) =
         mkdirSync(dirname(configFilePath), { recursive: true })
         const payload = normalizePageConfig(pageKey, {
             pageKey,
-            extraFields: config.extraFields ?? config.fields ?? [],
+            tableName: config.tableName,
+            fields: config.fields ?? config.extraFields ?? [],
+            extraFields: config.extraFields ?? [],
             fieldOrder: config.fieldOrder ?? [],
             coreFieldOverrides: config.coreFieldOverrides ?? [],
         })
